@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FarmLedger V3 — Setup</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="login-bg"><div class="login-bg-grid"></div></div>
+
+<button class="theme-toggle" id="themeToggle">
+  <span id="themeIcon">☀️</span><span id="themeLabel">Light</span>
+</button>
+
+<div class="login-page">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-logo">⚙️</div>
+      <div class="login-title">First<span> Setup</span></div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">Create the Admin account — ایڈمن اکاؤنٹ بنائیں</div>
+    </div>
+
+    <div style="background:var(--warning-bg);border:1px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--warning);font-weight:600;margin-bottom:20px">
+      ⚠️ Run this page only once. Delete setup.html from GitHub after use.
+    </div>
+
+    <div class="alert" id="setupAlert"></div>
+
+    <div class="form-group">
+      <label class="form-label">Admin Name</label>
+      <div class="input-icon-wrap">
+        <span class="input-icon">👤</span>
+        <input class="form-input" id="s_name" placeholder="Your full name"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <div class="input-icon-wrap">
+        <span class="input-icon">📧</span>
+        <input class="form-input" type="email" id="s_email" placeholder="admin@email.com"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-icon-wrap">
+        <span class="input-icon">🔑</span>
+        <input class="form-input" type="password" id="s_pass" placeholder="Min 6 characters"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Secret Key</label>
+      <div class="input-icon-wrap">
+        <span class="input-icon">🛡️</span>
+        <input class="form-input" type="password" id="s_secret" placeholder="farmledger2024"/>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px">Default key: <strong>farmledger2024</strong></div>
+    </div>
+
+    <button class="btn-login" id="setupBtn" onclick="doSetup()">🚀 Create Admin Account</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { initializeApp }      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey:"AIzaSyDpTPibk-7_kqyJdfN94KrLlcKkoNnqIYE", authDomain:"farmledger-e85e3.firebaseapp.com",
+    projectId:"farmledger-e85e3", storageBucket:"farmledger-e85e3.firebasestorage.app",
+    messagingSenderId:"922324809308", appId:"1:922324809308:web:05c015ce12e55034e99899"
+  });
+  const auth = getAuth(app), db = getFirestore(app);
+
+  const theme = localStorage.getItem('fl_theme')||'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeIcon').textContent  = theme==='dark'?'☀️':'🌙';
+  document.getElementById('themeLabel').textContent = theme==='dark'?'Light':'Dark';
+  document.getElementById('themeToggle').addEventListener('click',()=>{
+    const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',n); localStorage.setItem('fl_theme',n);
+    document.getElementById('themeIcon').textContent=n==='dark'?'☀️':'🌙';
+    document.getElementById('themeLabel').textContent=n==='dark'?'Light':'Dark';
+  });
+
+  window.doSetup = async function() {
+    const name=document.getElementById('s_name').value.trim(), email=document.getElementById('s_email').value.trim();
+    const pass=document.getElementById('s_pass').value.trim(), secret=document.getElementById('s_secret').value.trim();
+    const al=document.getElementById('setupAlert'), btn=document.getElementById('setupBtn');
+    al.className='alert';
+    if (!name||!email||!pass||!secret){al.textContent='⚠️ All fields required';al.className='alert error';return;}
+    if (secret!=='farmledger2024'){al.textContent='❌ Wrong secret key';al.className='alert error';return;}
+    if (pass.length<6){al.textContent='⚠️ Password min 6 characters';al.className='alert error';return;}
+    btn.textContent='⏳ Creating...';btn.disabled=true;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth,email,pass);
+      await setDoc(doc(db,'users',cred.user.uid),{
+        uid:cred.user.uid, userId:'ADM-001', name, email,
+        role:'admin', status:'active', createdAt:serverTimestamp()
+      });
+      al.textContent='✅ Admin created! Redirecting to login...';
+      al.className='alert success';
+      setTimeout(()=>window.location.href='index.html',2000);
+    } catch(e){
+      al.textContent='❌ '+(e.code==='auth/email-already-in-use'?'Email already registered':e.message);
+      al.className='alert error';
+      btn.textContent='🚀 Create Admin Account';btn.disabled=false;
+    }
+  };
+</script>
+</body>
+</html>
