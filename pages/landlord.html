@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FarmLedger V3 — Landlord</title>
+  <meta name="theme-color" content="#080d08"/>
+  <link rel="manifest" href="../manifest.json"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-layout">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">🌾</div>
+      <div><div class="sidebar-brand-name">FarmLedger <span class="sidebar-brand-ver">V3</span></div></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatar">L</div>
+      <div><div class="sidebar-user-name" id="sidebarName">Landlord</div><div class="sidebar-user-role">👑 Zamindar</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Dashboard</div>
+      <button class="nav-item active" data-tab="overview"><span class="nav-icon">📊</span>Overview</button>
+      <div class="nav-section">Management</div>
+      <button class="nav-item" data-tab="lands"><span class="nav-icon">🌱</span>My Lands</button>
+      <button class="nav-item" data-tab="farmers"><span class="nav-icon">👨‍🌾</span>Farmers</button>
+      <button class="nav-item" data-tab="managers"><span class="nav-icon">👨‍💼</span>Managers</button>
+      <button class="nav-item" data-tab="inventory"><span class="nav-icon">📦</span>Inventory</button>
+      <div class="nav-section">Finance</div>
+      <button class="nav-item" data-tab="ledger"><span class="nav-icon">📒</span>Ledger</button>
+      <button class="nav-item" data-tab="charts"><span class="nav-icon">📈</span>Charts</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--muted)">Theme</span>
+        <button id="themeToggle" style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;font-family:var(--font)">☀️ Light</button>
+      </div>
+      <button class="sidebar-logout" id="logoutBtn">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="offline-banner" id="offlineBanner">📵 Offline — Changes sync when connected</div>
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div><div class="page-title" id="pageTitle">Overview</div><div class="page-sub" id="pageSub">Landlord Dashboard</div></div>
+      </div>
+      <div class="topbar-right">
+        <div class="online-dot" id="onlineDot">Online</div>
+      </div>
+    </header>
+    <div class="content">
+      <div id="pageLoader" class="page-loader"><div class="spinner"></div><div class="loader-text">Loading your dashboard...</div></div>
+      <div id="appContent" class="hidden">
+
+        <!-- OVERVIEW -->
+        <div data-tab-content="overview">
+          <div class="content-header">
+            <div><div class="content-title" id="welcomeTitle">Good morning 👋</div><div class="content-sub">Your farm summary — آپ کی زمینوں کا جائزہ</div></div>
+            <button class="btn btn-primary" onclick="openModal('addLandModal')">➕ Add Land</button>
+          </div>
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><div class="card-title">🌱 My Lands</div><button class="btn btn-sm btn-outline" onclick="switchTab('lands')">View All →</button></div>
+              <div id="overviewLands"></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">📒 Recent Activity</div></div>
+              <div id="recentActivity"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LANDS -->
+        <div data-tab-content="lands" class="hidden">
+          <div class="content-header">
+            <div><div class="content-title">🌱 My Lands — میری زمینیں</div><div class="content-sub" id="landsSub"></div></div>
+            <button class="btn btn-primary" onclick="openModal('addLandModal')">➕ Add Land</button>
+          </div>
+          <div class="stats-grid" id="landsStatsGrid"></div>
+          <div id="landsGrid"></div>
+        </div>
+
+        <!-- FARMERS -->
+        <div data-tab-content="farmers" class="hidden">
+          <div class="content-header">
+            <div><div class="content-title">👨‍🌾 Farmers — کاشتکار</div><div class="content-sub" id="farmersSub"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><input class="form-input" style="max-width:220px" id="farmerSearch" placeholder="🔍 Search..." oninput="filterFarmers(this.value)"/></div>
+            <div class="table-wrap">
+              <table><thead><tr><th>ID</th><th>Name</th><th>Land</th><th>Phone</th><th>Debt</th><th>Status</th></tr></thead><tbody id="farmersBody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANAGERS -->
+        <div data-tab-content="managers" class="hidden">
+          <div class="content-header">
+            <div><div class="content-title">👨‍💼 Managers — منیجر</div><div class="content-sub" id="mgrsSub"></div></div>
+            <button class="btn btn-primary" onclick="openModal('addManagerModal')">➕ Add Manager</button>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Lands</th><th>Status</th></tr></thead><tbody id="mgrsBody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- INVENTORY -->
+        <div data-tab-content="inventory" class="hidden">
+          <div class="content-header">
+            <div><div class="content-title">📦 Inventory — گودام</div><div class="content-sub">Stock & warehouse management</div></div>
+            <button class="btn btn-primary" onclick="openModal('addInventoryModal')">➕ Add Item</button>
+          </div>
+          <div class="stats-grid" id="invStatsGrid"></div>
+          <div class="card">
+            <div class="table-wrap">
+              <table><thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Unit</th><th>Status</th><th></th></tr></thead><tbody id="invBody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEDGER -->
+        <div data-tab-content="ledger" class="hidden">
+          <div class="content-header">
+            <div><div class="content-title">📒 Ledger — حساب کتاب</div></div>
+            <button class="btn btn-sm btn-outline" onclick="printLedger()">🖨️ Print</button>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header" style="flex-wrap:wrap;gap:8px">
+              <select class="form-select" style="width:auto" id="ledgerLandFilter" onchange="buildLedger()"><option value="">All Lands</option></select>
+              <select class="form-select" style="width:auto" id="ledgerFarmerFilter" onchange="buildLedger()"><option value="">All Farmers</option></select>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-body" id="ledgerSummary"></div>
+          </div>
+          <div id="ledgerTimeline"></div>
+        </div>
+
+        <!-- CHARTS -->
+        <div data-tab-content="charts" class="hidden">
+          <div class="content-header">
+            <div><div class="content-title">📈 Charts — گراف</div></div>
+            <select class="form-select" style="width:auto" id="chartPeriod" onchange="renderCharts()">
+              <option value="monthly">Monthly</option>
+              <option value="seasonal">Seasonal</option>
+              <option value="annual">Annual</option>
+            </select>
+          </div>
+          <div class="grid-2">
+            <div class="card"><div class="card-header"><div class="card-title">💸 Expenses vs Income</div></div><div class="card-body"><canvas id="mainChart" height="200"></canvas></div></div>
+            <div class="card"><div class="card-header"><div class="card-title">🌱 Per Land Profit</div></div><div class="card-body"><canvas id="landChart" height="200"></canvas></div></div>
+          </div>
+          <div class="card"><div class="card-header"><div class="card-title">📊 Profit Trend</div></div><div class="card-body"><canvas id="trendChart" height="120"></canvas></div></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Land Modal -->
+<div class="modal-overlay" id="addLandModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><div class="modal-title">🌱 Add Land</div><button class="modal-close" onclick="closeModal('addLandModal')">✕</button></div>
+    <div class="alert" id="landAlert"></div>
+    <div class="form-group"><label class="form-label">Land Name *</label><input class="form-input" id="land_name" placeholder="e.g. Chak 45 North"/></div>
+    <div class="input-grid-2">
+      <div class="form-group"><label class="form-label">Acres *</label><input class="form-input" type="number" id="land_acres" placeholder="25"/></div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="land_location" placeholder="Multan"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Current Crop</label><input class="form-input" id="land_crop" placeholder="Wheat, Cotton..."/></div>
+    <div class="form-group"><label class="form-label">Assign Manager</label>
+      <select class="form-select" id="land_manager"><option value="">No manager yet</option></select>
+    </div>
+    <button class="btn btn-primary btn-full" id="landBtn" onclick="addLand()">✅ Add Land</button>
+  </div>
+</div>
+
+<!-- Add Manager Modal -->
+<div class="modal-overlay" id="addManagerModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><div class="modal-title">👨‍💼 Add Manager</div><button class="modal-close" onclick="closeModal('addManagerModal')">✕</button></div>
+    <div class="alert" id="mgrAlert"></div>
+    <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="mgr_name" placeholder="Ali Hassan"/></div>
+    <div class="form-group"><label class="form-label">Email *</label><input class="form-input" type="email" id="mgr_email" placeholder="ali@email.com"/></div>
+    <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="mgr_phone" placeholder="03001234567"/></div>
+    <div class="form-group"><label class="form-label">Password *</label><input class="form-input" type="password" id="mgr_pass" placeholder="Min 6 characters"/></div>
+    <button class="btn btn-primary btn-full" id="mgrBtn" onclick="addManager()">✅ Create Manager</button>
+  </div>
+</div>
+
+<!-- Add Inventory Modal -->
+<div class="modal-overlay" id="addInventoryModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><div class="modal-title">📦 Add Inventory Item</div><button class="modal-close" onclick="closeModal('addInventoryModal')">✕</button></div>
+    <div class="alert" id="invAlert"></div>
+    <div class="form-group"><label class="form-label">Item Name *</label><input class="form-input" id="inv_name" placeholder="e.g. DAP Fertilizer"/></div>
+    <div class="form-group"><label class="form-label">Category</label>
+      <select class="form-select" id="inv_category">
+        <option value="fertilizer">🧪 Fertilizer</option>
+        <option value="seeds">🌱 Seeds</option>
+        <option value="pesticide">💊 Pesticide</option>
+        <option value="diesel">⛽ Diesel</option>
+        <option value="equipment">🔧 Equipment</option>
+        <option value="other">📦 Other</option>
+      </select>
+    </div>
+    <div class="input-grid-2">
+      <div class="form-group"><label class="form-label">Quantity *</label><input class="form-input" type="number" id="inv_qty" placeholder="100"/></div>
+      <div class="form-group"><label class="form-label">Unit</label>
+        <select class="form-select" id="inv_unit"><option value="kg">kg</option><option value="litre">litre</option><option value="bag">bag</option><option value="ton">ton</option><option value="piece">piece</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Min Alert Level</label><input class="form-input" type="number" id="inv_min" placeholder="10"/></div>
+    <button class="btn btn-primary btn-full" id="invBtn" onclick="addInventory()">✅ Add to Inventory</button>
+  </div>
+</div>
+
+<!-- View Farmer Modal -->
+<div class="modal-overlay" id="viewFarmerModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><div class="modal-title">👨‍🌾 Farmer Details</div><button class="modal-close" onclick="closeModal('viewFarmerModal')">✕</button></div>
+    <div id="farmerViewContent"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, collection, getDocs, query, where, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app=initializeApp({apiKey:"AIzaSyDpTPibk-7_kqyJdfN94KrLlcKkoNnqIYE",authDomain:"farmledger-e85e3.firebaseapp.com",projectId:"farmledger-e85e3",storageBucket:"farmledger-e85e3.firebasestorage.app",messagingSenderId:"922324809308",appId:"1:922324809308:web:05c015ce12e55034e99899"});
+const auth=getAuth(app),db=getFirestore(app);
+
+let ME=null,myLands=[],myFarmers=[],myMgrs=[],myActs=[],myHarvests=[],myInventory=[];
+let mainChart=null,landChart=null,trendChart=null;
+
+// Theme
+const t=localStorage.getItem('fl_theme')||'dark';
+document.documentElement.setAttribute('data-theme',t);
+const tBtn=document.getElementById('themeToggle');
+tBtn.textContent=t==='dark'?'☀️ Light':'🌙 Dark';
+tBtn.addEventListener('click',()=>{const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('fl_theme',n);tBtn.textContent=n==='dark'?'☀️ Light':'🌙 Dark';});
+
+// Toast
+function toast(msg,type='success'){const c=document.getElementById('toast-container'),t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<span>${{success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'}[type]||'✅'}</span><span>${msg}</span>`;c.appendChild(t);requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3500);}
+function fmt(n){return '₨'+Number(n||0).toLocaleString();}
+function fmtDate(d){if(!d)return '—';return new Date(d).toLocaleDateString('en-PK',{day:'numeric',month:'short',year:'numeric'});}
+
+// Modal
+window.openModal=id=>{const m=document.getElementById(id);if(m)m.classList.add('open');};
+window.closeModal=id=>{const m=document.getElementById(id);if(m)m.classList.remove('open');};
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// Online
+function updateOnline(){const on=navigator.onLine,el=document.getElementById('onlineDot'),bn=document.getElementById('offlineBanner');if(el){el.className=`online-dot${on?'':' offline'}`;el.textContent=on?'Online':'Offline';}if(bn)bn.classList.toggle('show',!on);}
+window.addEventListener('online',()=>{updateOnline();toast('Back online!','success');});
+window.addEventListener('offline',()=>{updateOnline();toast('Offline mode','warning');});
+updateOnline();
+
+// Sidebar
+const tog=document.getElementById('menuToggle'),sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay');
+tog?.addEventListener('click',()=>{sb.classList.toggle('open');ov.classList.toggle('show');});
+ov?.addEventListener('click',()=>{sb.classList.remove('open');ov.classList.remove('show');});
+
+// Tabs
+window.switchTab=function(tab){
+  document.querySelectorAll('.nav-item[data-tab]').forEach(i=>i.classList.toggle('active',i.dataset.tab===tab));
+  document.querySelectorAll('[data-tab-content]').forEach(c=>c.classList.toggle('hidden',c.dataset.tabContent!==tab));
+  const titles={overview:'Overview',lands:'My Lands',farmers:'Farmers',managers:'Managers',inventory:'Inventory',ledger:'Ledger',charts:'Charts'};
+  document.getElementById('pageTitle').textContent=titles[tab]||tab;
+  sb.classList.remove('open');ov.classList.remove('show');
+  if(tab==='charts')renderCharts();
+  if(tab==='ledger')buildLedger();
+};
+document.querySelectorAll('.nav-item[data-tab]').forEach(i=>i.addEventListener('click',()=>switchTab(i.dataset.tab)));
+
+// Auth
+onAuthStateChanged(auth,async user=>{
+  if(!user){window.location.href='../index.html';return;}
+  const loader=document.getElementById('pageLoader');
+  const showErr=msg=>loader.innerHTML=`<div style="color:#fb7185;text-align:center;padding:24px;font-size:14px;line-height:1.8">❌ Error<br><small style="opacity:.7">${msg}</small></div>`;
+  try{
+    const snap=await getDoc(doc(db,'users',user.uid));
+    if(!snap.exists()){showErr('User record not found in database');return;}
+    const data=snap.data();
+    if(data.role!=='landlord'){window.location.href='../index.html';return;}
+    if(data.status==='suspended'){showErr('Account suspended. Contact admin.');return;}
+    ME={uid:user.uid,...data};
+    document.getElementById('sidebarName').textContent=ME.name||'Landlord';
+    document.getElementById('sidebarAvatar').textContent=(ME.name||'L').charAt(0).toUpperCase();
+    const hr=new Date().getHours();
+    document.getElementById('welcomeTitle').textContent=(hr<12?'Good morning':hr<17?'Good afternoon':'Good evening')+', '+ME.name+' 👋';
+    await loadAll();
+    loader.classList.add('hidden');
+    document.getElementById('appContent').classList.remove('hidden');
+  }catch(e){showErr(e.message);}
+});
+
+// Load
+async function loadAll(){
+  const lid=ME.userId;
+  if(!lid){toast('⚠️ No userId on account — contact admin','warning');return;}
+  try {
+    const [lS,fS,uS,aS,hS,iS]=await Promise.all([
+      getDocs(query(collection(db,'farms'),where('landlordId','==',lid))),
+      getDocs(query(collection(db,'farmers'),where('landlordId','==',lid))),
+      getDocs(query(collection(db,'users'),where('landlordId','==',lid))),
+      getDocs(query(collection(db,'activities'),where('landlordId','==',lid))),
+      getDocs(query(collection(db,'harvests'),where('landlordId','==',lid))),
+      getDocs(query(collection(db,'inventory'),where('landlordId','==',lid)))
+    ]);
+    myLands=lS.docs.map(d=>({id:d.id,...d.data()}));
+    myFarmers=fS.docs.map(d=>({id:d.id,...d.data()}));
+    myMgrs=uS.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='manager');
+    myActs=aS.docs.map(d=>({id:d.id,...d.data()}));
+    myHarvests=hS.docs.map(d=>({id:d.id,...d.data()}));
+    myInventory=iS.docs.map(d=>({id:d.id,...d.data()}));
+    populateSelects();
+    renderOverview();renderLands();renderFarmers(myFarmers);renderMgrs();renderInventory();
+  } catch(e) {
+    toast('❌ Load error: '+e.message,'error');
+    throw e;
+  }
+}
+
+function populateSelects(){
+  // Land manager dropdown
+  const ms=document.getElementById('land_manager');
+  ms.innerHTML='<option value="">No manager yet</option>'+myMgrs.map(m=>`<option value="${m.userId}">${m.name}</option>`).join('');
+  // Ledger filters
+  const lf=document.getElementById('ledgerLandFilter');
+  lf.innerHTML='<option value="">All Lands</option>'+myLands.map(l=>`<option value="${l.landId}">${l.name}</option>`).join('');
+  const ff=document.getElementById('ledgerFarmerFilter');
+  ff.innerHTML='<option value="">All Farmers</option>'+myFarmers.map(f=>`<option value="${f.farmerId}">${f.name}</option>`).join('');
+}
+
+// Overview
+function renderOverview(){
+  const totalExp=myActs.reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalInc=myHarvests.reduce((s,h)=>s+Number(h.landlordShare||0),0);
+  const profit=totalInc-totalExp;
+  const lowStock=myInventory.filter(i=>Number(i.quantity||0)<=Number(i.minLevel||0)).length;
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-icon">🌱</div><div class="stat-label">Total Lands</div><div class="stat-value">${myLands.length}</div></div>
+    <div class="stat-card"><div class="stat-icon">👨‍🌾</div><div class="stat-label">Farmers</div><div class="stat-value">${myFarmers.length}</div></div>
+    <div class="stat-card"><div class="stat-icon">💸</div><div class="stat-label">Total Expenses</div><div class="stat-value" style="font-size:18px;color:var(--danger)">${fmt(totalExp)}</div></div>
+    <div class="stat-card"><div class="stat-icon">${profit>=0?'📈':'📉'}</div><div class="stat-label">Net Profit</div><div class="stat-value" style="font-size:18px;color:${profit>=0?'var(--primary)':'var(--danger)'}">${fmt(profit)}</div></div>`;
+
+  document.getElementById('overviewLands').innerHTML=myLands.length===0
+    ?'<div class="empty-state"><div class="empty-icon">🌱</div><div class="empty-title">No lands yet</div><div class="empty-sub">Add your first land to get started</div></div>'
+    :myLands.slice(0,4).map(l=>{
+        const exp=myActs.filter(a=>a.landId===l.landId).reduce((s,a)=>s+Number(a.amount||0),0);
+        const inc=myHarvests.filter(h=>h.landId===l.landId).reduce((s,h)=>s+Number(h.landlordShare||0),0);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div><div style="font-weight:700;font-size:13px">${l.name}</div><div style="font-size:11px;color:var(--muted)">${l.crop||'No crop'} • ${l.acres||'?'} acres</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:${inc-exp>=0?'var(--primary)':'var(--danger)'}">${fmt(inc-exp)}</div><div style="font-size:10px;color:var(--muted)">profit</div></div>
+        </div>`;}).join('');
+
+  const recent=[...myActs,...myHarvests].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  document.getElementById('recentActivity').innerHTML=recent.length===0
+    ?'<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No activity yet</div></div>'
+    :recent.map(r=>{
+        const isHarv=!!r.landlordShare;
+        const land=myLands.find(l=>l.landId===r.landId);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:600">${isHarv?'🌾 Harvest':'📋 '+r.type}</div><div style="font-size:11px;color:var(--muted)">${land?.name||'—'} • ${fmtDate(r.date)}</div></div>
+          <div style="font-weight:800;color:${isHarv?'var(--primary)':'var(--danger)'};">${isHarv?'+':'-'}${fmt(isHarv?r.landlordShare:r.amount)}</div>
+        </div>`;}).join('');
+
+  if(lowStock>0) toast(`⚠️ ${lowStock} inventory item${lowStock>1?'s':''} running low!`,'warning');
+}
+
+// Lands
+function renderLands(){
+  document.getElementById('landsSub').textContent=`${myLands.length} land${myLands.length!==1?'s':''}`;
+  const totalAcres=myLands.reduce((s,l)=>s+Number(l.acres||0),0);
+  document.getElementById('landsStatsGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-icon">🌱</div><div class="stat-label">Total Lands</div><div class="stat-value">${myLands.length}</div></div>
+    <div class="stat-card"><div class="stat-icon">📐</div><div class="stat-label">Total Acres</div><div class="stat-value">${totalAcres}</div></div>`;
+  document.getElementById('landsGrid').innerHTML=myLands.length===0
+    ?'<div class="empty-state"><div class="empty-icon">🌱</div><div class="empty-title">No lands yet</div><div class="empty-sub">Add your first land</div></div>'
+    :myLands.map(l=>{
+        const exp=myActs.filter(a=>a.landId===l.landId).reduce((s,a)=>s+Number(a.amount||0),0);
+        const inc=myHarvests.filter(h=>h.landId===l.landId).reduce((s,h)=>s+Number(h.landlordShare||0),0);
+        const profit=inc-exp;
+        const mgr=myMgrs.find(m=>m.userId===l.managerId);
+        const farmers=myFarmers.filter(f=>f.landId===l.landId);
+        return `<div class="card" style="margin-bottom:14px">
+          <div class="card-body">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+              <div>
+                <div style="font-size:17px;font-weight:800">${l.name}</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">${l.location||'—'} • ${l.acres||'?'} acres • ${l.crop||'No crop'}</div>
+              </div>
+              <span class="badge badge-green">${l.landId||'—'}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+              <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+                <div style="font-size:11px;color:var(--muted)">Expenses</div>
+                <div style="font-weight:800;color:var(--danger);font-size:14px">${fmt(exp)}</div>
+              </div>
+              <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+                <div style="font-size:11px;color:var(--muted)">Income</div>
+                <div style="font-weight:800;color:var(--primary);font-size:14px">${fmt(inc)}</div>
+              </div>
+              <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+                <div style="font-size:11px;color:var(--muted)">Profit</div>
+                <div style="font-weight:800;color:${profit>=0?'var(--primary)':'var(--danger)'};font-size:14px">${fmt(profit)}</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+              <span>👨‍💼 ${mgr?.name||'No manager'}</span>
+              <span>👨‍🌾 ${farmers.length} farmer${farmers.length!==1?'s':''}</span>
+            </div>
+          </div>
+        </div>`;}).join('');
+}
+
+// Farmers
+function renderFarmers(list){
+  document.getElementById('farmersSub').textContent=`${list.length} farmer${list.length!==1?'s':''}`;
+  document.getElementById('farmersBody').innerHTML=list.length===0
+    ?'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No farmers yet</td></tr>'
+    :list.map(f=>{
+        const land=myLands.find(l=>l.landId===f.landId);
+        const debt=myActs.filter(a=>a.farmerId===f.farmerId&&a.chargedTo==='farmer').reduce((s,a)=>s+Number(a.amount||0),0);
+        const paid=myHarvests.filter(h=>h.farmerId===f.farmerId).reduce((s,h)=>s+Number(h.farmerDeductedDebt||0),0);
+        const netDebt=debt-paid;
+        return `<tr>
+          <td><span class="badge badge-green">${f.farmerId||'—'}</span></td>
+          <td><div style="font-weight:700">${f.name}</div>${f.isMain?'<span class="badge badge-gold" style="font-size:10px">Main</span>':''}</td>
+          <td class="text-sm">${land?.name||'—'}</td>
+          <td class="text-sm">${f.phone||'—'}</td>
+          <td style="font-weight:800;color:${netDebt>0?'var(--danger)':'var(--primary)'}">${fmt(netDebt)}</td>
+          <td><span class="badge ${f.status==='active'?'badge-green':'badge-red'}">${f.status||'active'}</span></td>
+        </tr>`;}).join('');
+}
+window.filterFarmers=v=>renderFarmers(v?myFarmers.filter(f=>(f.name+f.phone).toLowerCase().includes(v.toLowerCase())):myFarmers);
+
+// Managers
+function renderMgrs(){
+  document.getElementById('mgrsSub').textContent=`${myMgrs.length} manager${myMgrs.length!==1?'s':''}`;
+  document.getElementById('mgrsBody').innerHTML=myMgrs.length===0
+    ?'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No managers yet. Add one!</td></tr>'
+    :myMgrs.map(m=>{
+        const mgrLands=myLands.filter(l=>l.managerId===m.userId).length;
+        return `<tr>
+          <td><span class="badge badge-blue">${m.userId||'—'}</span></td>
+          <td style="font-weight:700">${m.name}</td>
+          <td class="text-sm">${m.email||'—'}</td>
+          <td class="text-sm">${m.phone||'—'}</td>
+          <td><span class="badge badge-blue">${mgrLands}</span></td>
+          <td><span class="badge ${m.status==='suspended'?'badge-red':'badge-green'}">${m.status==='suspended'?'🚫':'✅'}</span></td>
+        </tr>`;}).join('');
+}
+
+// Inventory
+function renderInventory(){
+  const low=myInventory.filter(i=>Number(i.quantity||0)<=Number(i.minLevel||0)).length;
+  const cats=[...new Set(myInventory.map(i=>i.category))].length;
+  document.getElementById('invStatsGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Total Items</div><div class="stat-value">${myInventory.length}</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Low Stock</div><div class="stat-value" style="color:var(--warning)">${low}</div></div>`;
+  const IC={fertilizer:'🧪',seeds:'🌱',pesticide:'💊',diesel:'⛽',equipment:'🔧',other:'📦'};
+  document.getElementById('invBody').innerHTML=myInventory.length===0
+    ?'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No inventory items</td></tr>'
+    :myInventory.map(i=>{
+        const isLow=Number(i.quantity||0)<=Number(i.minLevel||0);
+        return `<tr>
+          <td style="font-weight:700">${i.name}</td>
+          <td><span class="badge badge-blue">${IC[i.category]||'📦'} ${i.category||'—'}</span></td>
+          <td style="font-weight:800;color:${isLow?'var(--warning)':'var(--text)'}">${i.quantity||0}</td>
+          <td class="text-sm text-muted">${i.unit||'—'}</td>
+          <td><span class="badge ${isLow?'badge-warning':'badge-green'}">${isLow?'⚠️ Low':'✅ OK'}</span></td>
+          <td><button class="btn btn-sm btn-outline" onclick="adjustStock('${i.id}','${i.name}',${i.quantity||0},'${i.unit||''}')">Adjust</button></td>
+        </tr>`;}).join('');
+}
+window.adjustStock=function(id,name,qty,unit){
+  const newQty=prompt(`Adjust stock for ${name}\nCurrent: ${qty} ${unit}\nEnter new quantity:`);
+  if(newQty===null||newQty==='')return;
+  updateDoc(doc(db,'inventory',id),{quantity:Number(newQty),updatedAt:serverTimestamp()}).then(()=>{toast(`✅ ${name} updated to ${newQty} ${unit}`);loadAll();}).catch(e=>toast('❌ '+e.message,'error'));
+};
+
+// Ledger
+window.buildLedger=function(){
+  const lf=document.getElementById('ledgerLandFilter').value;
+  const ff=document.getElementById('ledgerFarmerFilter').value;
+  let acts=myActs,harvs=myHarvests;
+  if(lf){acts=acts.filter(a=>a.landId===lf);harvs=harvs.filter(h=>h.landId===lf);}
+  if(ff){acts=acts.filter(a=>a.farmerId===ff);harvs=harvs.filter(h=>h.farmerId===ff);}
+  const totalExp=acts.reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalInc=harvs.reduce((s,h)=>s+Number(h.landlordShare||0),0);
+  const profit=totalInc-totalExp;
+  document.getElementById('ledgerSummary').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="text-align:center;padding:12px;background:var(--bg2);border-radius:var(--radius-sm)"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">EXPENSES</div><div style="font-size:18px;font-weight:800;color:var(--danger)">${fmt(totalExp)}</div></div>
+      <div style="text-align:center;padding:12px;background:var(--bg2);border-radius:var(--radius-sm)"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">INCOME</div><div style="font-size:18px;font-weight:800;color:var(--primary)">${fmt(totalInc)}</div></div>
+      <div style="text-align:center;padding:12px;background:var(--bg2);border-radius:var(--radius-sm)"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">PROFIT</div><div style="font-size:18px;font-weight:800;color:${profit>=0?'var(--primary)':'var(--danger)'}">${fmt(profit)}</div></div>
+    </div>`;
+  const IC={diesel:'⛽',fertilizer:'🧪',seeds:'🌱',labor:'👷',pesticide:'💊',equipment:'🔧',water:'💧',other:'📦'};
+  const all=[
+    ...acts.map(a=>({date:a.date,title:(IC[a.type]||'📦')+' '+a.type,sub:myLands.find(l=>l.landId===a.landId)?.name||'—',amount:-Number(a.amount||0),type:'expense'})),
+    ...harvs.map(h=>({date:h.date,title:'🌾 Harvest — '+h.crop,sub:myLands.find(l=>l.landId===h.landId)?.name||'—',amount:Number(h.landlordShare||0),type:'income'}))
+  ].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('ledgerTimeline').innerHTML=all.length===0
+    ?'<div class="empty-state"><div class="empty-icon">📒</div><div class="empty-title">No records found</div></div>'
+    :all.map(r=>`<div class="card" style="margin-bottom:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-weight:700;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${r.sub} • ${fmtDate(r.date)}</div></div>
+        <div style="font-weight:800;font-size:15px;color:${r.type==='income'?'var(--primary)':'var(--danger)'}">${r.type==='income'?'+':''}${fmt(Math.abs(r.amount))}</div>
+      </div>`).join('');
+};
+
+// Charts
+window.renderCharts=function(){
+  const period=document.getElementById('chartPeriod').value;
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let labels=[],expData=[],incData=[];
+  if(period==='monthly'){
+    labels=months;
+    expData=months.map((_,i)=>myActs.filter(a=>new Date(a.date).getMonth()===i).reduce((s,a)=>s+Number(a.amount||0),0));
+    incData=months.map((_,i)=>myHarvests.filter(h=>new Date(h.date).getMonth()===i).reduce((s,h)=>s+Number(h.landlordShare||0),0));
+  } else if(period==='seasonal'){
+    labels=['Rabi (Winter)','Kharif (Summer)','Off Season'];
+    const rabi=a=>new Date(a.date).getMonth()>=10||new Date(a.date).getMonth()<=3;
+    const kharif=a=>new Date(a.date).getMonth()>=4&&new Date(a.date).getMonth()<=9;
+    expData=[myActs.filter(rabi).reduce((s,a)=>s+Number(a.amount||0),0),myActs.filter(kharif).reduce((s,a)=>s+Number(a.amount||0),0),0];
+    incData=[myHarvests.filter(rabi).reduce((s,h)=>s+Number(h.landlordShare||0),0),myHarvests.filter(kharif).reduce((s,h)=>s+Number(h.landlordShare||0),0),0];
+  } else {
+    const yr=new Date().getFullYear();
+    labels=[yr-2,yr-1,yr].map(String);
+    expData=labels.map(y=>myActs.filter(a=>new Date(a.date).getFullYear()===Number(y)).reduce((s,a)=>s+Number(a.amount||0),0));
+    incData=labels.map(y=>myHarvests.filter(h=>new Date(h.date).getFullYear()===Number(y)).reduce((s,h)=>s+Number(h.landlordShare||0),0));
+  }
+  const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+  const gc={color:isDark?'rgba(240,253,245,0.6)':'rgba(5,46,22,0.6)',grid:isDark?'rgba(34,197,94,0.08)':'rgba(22,163,74,0.08)'};
+  const chartOpts={responsive:true,plugins:{legend:{labels:{color:gc.color,font:{family:'Outfit',size:12}}}},scales:{x:{ticks:{color:gc.color,font:{family:'Outfit'}},grid:{color:gc.grid}},y:{ticks:{color:gc.color,font:{family:'Outfit'},callback:v=>'₨'+v.toLocaleString()},grid:{color:gc.grid}}}};
+  if(mainChart)mainChart.destroy();
+  mainChart=new Chart(document.getElementById('mainChart'),{type:'bar',data:{labels,datasets:[{label:'Expenses',data:expData,backgroundColor:'rgba(251,113,133,0.7)',borderColor:'#fb7185',borderWidth:1,borderRadius:4},{label:'Income',data:incData,backgroundColor:'rgba(34,197,94,0.7)',borderColor:'#22c55e',borderWidth:1,borderRadius:4}]},options:chartOpts});
+  if(landChart)landChart.destroy();
+  const landLabels=myLands.map(l=>l.name);
+  const landProfits=myLands.map(l=>{const e=myActs.filter(a=>a.landId===l.landId).reduce((s,a)=>s+Number(a.amount||0),0);const i=myHarvests.filter(h=>h.landId===l.landId).reduce((s,h)=>s+Number(h.landlordShare||0),0);return i-e;});
+  landChart=new Chart(document.getElementById('landChart'),{type:'doughnut',data:{labels:landLabels.length?landLabels:['No lands'],datasets:[{data:landLabels.length?landProfits.map(p=>Math.max(p,0)):[1],backgroundColor:['#22c55e','#4ade80','#16a34a','#15803d','#166534'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{labels:{color:gc.color,font:{family:'Outfit',size:12}}}}}});
+  if(trendChart)trendChart.destroy();
+  const profitTrend=expData.map((e,i)=>incData[i]-e);
+  trendChart=new Chart(document.getElementById('trendChart'),{type:'line',data:{labels,datasets:[{label:'Net Profit',data:profitTrend,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#22c55e',pointRadius:4}]},options:{...chartOpts,plugins:{legend:{labels:{color:gc.color,font:{family:'Outfit',size:12}}}}}});
+};
+
+// Add Land
+window.addLand=async function(){
+  const name=document.getElementById('land_name').value.trim(),acres=document.getElementById('land_acres').value.trim();
+  const location=document.getElementById('land_location').value.trim(),crop=document.getElementById('land_crop').value.trim();
+  const managerId=document.getElementById('land_manager').value;
+  const al=document.getElementById('landAlert'),btn=document.getElementById('landBtn');
+  al.className='alert';
+  if(!name||!acres){al.textContent='⚠️ Name and acres required';al.className='alert error';return;}
+  btn.textContent='⏳ Adding...';btn.disabled=true;
+  try{
+    const ref=doc(db,'counters',`lands_${ME.userId}`);let landId;
+    await runTransaction(db,async tx=>{const s=await tx.get(ref);const count=s.exists()?(s.data().count||0)+1:1;tx.set(ref,{count});landId=`LND${ME.userId.replace('LND-','')}-${String(count).padStart(3,'0')}`;});
+    await addDoc(collection(db,'farms'),{landId,name,acres:Number(acres),location,crop,managerId,landlordId:ME.userId,status:'active',createdAt:serverTimestamp()});
+    toast(`✅ ${name} added!`);closeModal('addLandModal');
+    document.getElementById('land_name').value='';document.getElementById('land_acres').value='';
+    document.getElementById('land_location').value='';document.getElementById('land_crop').value='';
+    await loadAll();
+  }catch(e){al.textContent='❌ '+e.message;al.className='alert error';}
+  btn.textContent='✅ Add Land';btn.disabled=false;
+};
+
+// Add Manager
+window.addManager=async function(){
+  const name=document.getElementById('mgr_name').value.trim(),email=document.getElementById('mgr_email').value.trim();
+  const pass=document.getElementById('mgr_pass').value.trim(),phone=document.getElementById('mgr_phone').value.trim();
+  const al=document.getElementById('mgrAlert'),btn=document.getElementById('mgrBtn');
+  al.className='alert';
+  if(!name||!email||!pass){al.textContent='⚠️ Name, email and password required';al.className='alert error';return;}
+  if(pass.length<6){al.textContent='⚠️ Password min 6 characters';al.className='alert error';return;}
+  btn.textContent='⏳ Creating...';btn.disabled=true;
+  try{
+    const ref=doc(db,'counters',`managers_${ME.userId}`);let userId;
+    await runTransaction(db,async tx=>{const s=await tx.get(ref);const count=s.exists()?(s.data().count||0)+1:1;tx.set(ref,{count});userId=`MGR${ME.userId.replace('LND-','')}-${String(count).padStart(3,'0')}`;});
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await setDoc(doc(db,'users',cred.user.uid),{uid:cred.user.uid,userId,name,email,phone,role:'manager',status:'active',landlordId:ME.userId,createdBy:ME.uid,createdAt:serverTimestamp()});
+    toast(`✅ ${name} created!`);closeModal('addManagerModal');
+    ['mgr_name','mgr_email','mgr_pass','mgr_phone'].forEach(id=>document.getElementById(id).value='');
+    await loadAll();
+  }catch(e){al.textContent='❌ '+(e.code==='auth/email-already-in-use'?'Email already registered':e.message);al.className='alert error';}
+  btn.textContent='✅ Create Manager';btn.disabled=false;
+};
+
+// Add Inventory
+window.addInventory=async function(){
+  const name=document.getElementById('inv_name').value.trim(),category=document.getElementById('inv_category').value;
+  const qty=document.getElementById('inv_qty').value.trim(),unit=document.getElementById('inv_unit').value;
+  const minLevel=document.getElementById('inv_min').value.trim();
+  const al=document.getElementById('invAlert'),btn=document.getElementById('invBtn');
+  al.className='alert';
+  if(!name||!qty){al.textContent='⚠️ Name and quantity required';al.className='alert error';return;}
+  btn.textContent='⏳ Adding...';btn.disabled=true;
+  try{
+    await addDoc(collection(db,'inventory'),{name,category,quantity:Number(qty),unit,minLevel:Number(minLevel||0),landlordId:ME.userId,createdAt:serverTimestamp()});
+    toast(`✅ ${name} added to inventory!`);closeModal('addInventoryModal');
+    ['inv_name','inv_qty','inv_min'].forEach(id=>document.getElementById(id).value='');
+    await loadAll();
+  }catch(e){al.textContent='❌ '+e.message;al.className='alert error';}
+  btn.textContent='✅ Add to Inventory';btn.disabled=false;
+};
+
+// Print Ledger
+window.printLedger=function(){
+  const lf=document.getElementById('ledgerLandFilter').value;
+  let acts=myActs,harvs=myHarvests;
+  if(lf){acts=acts.filter(a=>a.landId===lf);harvs=harvs.filter(h=>h.landId===lf);}
+  const totalExp=acts.reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalInc=harvs.reduce((s,h)=>s+Number(h.landlordShare||0),0);
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Ledger Report</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#111}h1{color:#16a34a}.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0}.box{background:#f0fdf4;padding:14px;border-radius:8px;text-align:center}.lbl{font-size:11px;color:#666;font-weight:700}.val{font-size:18px;font-weight:800;margin-top:4px}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e7eb}.income{color:#16a34a;font-weight:700}.expense{color:#dc2626;font-weight:700}</style></head><body><h1>📒 FarmLedger Report</h1><p>${ME.name} • ${new Date().toLocaleDateString()}</p><div class="summary"><div class="box"><div class="lbl">EXPENSES</div><div class="val expense">₨${totalExp.toLocaleString()}</div></div><div class="box"><div class="lbl">INCOME</div><div class="val income">₨${totalInc.toLocaleString()}</div></div><div class="box"><div class="lbl">PROFIT</div><div class="val" style="color:${totalInc-totalExp>=0?'#16a34a':'#dc2626'}">₨${(totalInc-totalExp).toLocaleString()}</div></div></div>${[...acts.map(a=>({date:a.date,title:a.type,amount:-Number(a.amount||0)}))],...harvs.map(h=>({date:h.date,title:'Harvest: '+h.crop,amount:Number(h.landlordShare||0)}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`<div class="row"><span>${fmtDate(r.date)} — ${r.title}</span><span class="${r.amount>=0?'income':'expense'}">${r.amount>=0?'+':''}₨${Math.abs(r.amount).toLocaleString()}</span></div>`).join('')}<script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`);
+  w.document.close();
+};
+
+document.getElementById('logoutBtn').addEventListener('click',async()=>{if(!confirm('Logout?'))return;await signOut(auth);window.location.href='../index.html';});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('../sw.js').catch(()=>{});
+</script>
+</body>
+</html>
