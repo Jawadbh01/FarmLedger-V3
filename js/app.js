@@ -117,3 +117,12 @@ export function formatDate(timestamp) {
   const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
   return d.toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' });
 }
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./sw.js', { scope: './' })
+      .then(() => console.log('SW registered'))
+      .catch(console.error);
+  });
+}
