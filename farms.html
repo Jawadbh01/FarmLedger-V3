@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarmLedger V3 — Farms</title>
+  <meta name="theme-color" content="#16a34a" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <p class="loading-text">Loading Farms...</p>
+</div>
+
+<div class="app-layout" id="app" style="display:none;">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="/icons/icon-192.png" alt="FarmLedger" />
+      <div><div class="brand-name">FarmLedger</div><div class="brand-sub" id="sidebar-role">Panel</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <a href="#" class="nav-item" id="dash-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+        <a href="farms.html" class="nav-item active"><span class="nav-icon">🌾</span><span data-i18n="farms">Farms</span></a>
+        <a href="farmers.html" class="nav-item"><span class="nav-icon">👨‍🌾</span><span data-i18n="farmers">Farmers</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Finance</div>
+        <a href="bookkeeping.html" class="nav-item"><span class="nav-icon">📒</span><span data-i18n="bookkeeping">Bookkeeping</span></a>
+        <a href="inventory.html" class="nav-item"><span class="nav-icon">📦</span><span data-i18n="inventory">Inventory</span></a>
+        <a href="reports.html" class="nav-item"><span class="nav-icon">📈</span><span data-i18n="reports">Reports</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">User</div>
+          <div class="user-role" id="user-role-label">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-header">
+      <button class="icon-btn mobile-menu-btn" onclick="openSidebar()">☰</button>
+      <h1 class="header-title" data-i18n="farms">Farms</h1>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="toggleThemeLocal()">🌙</button>
+        <button class="icon-btn" onclick="toggleLangLocal()">🌐</button>
+        <button class="icon-btn" onclick="handleLogout()" style="color:var(--danger);">⏻</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div><h1 data-i18n="farms">Farms</h1><p>Manage all farm records</p></div>
+        <button class="btn btn-primary" id="add-farm-btn" onclick="openModal('farm-modal')">+ Add Farm</button>
+      </div>
+
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search farms..." id="farm-search" oninput="filterFarms()" />
+        </div>
+      </div>
+
+      <div id="farms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+        <div style="text-align:center;padding:60px;color:var(--text-muted);grid-column:1/-1;">
+          <div class="spinner" style="margin:0 auto 12px;"></div>
+          <p>Loading farms...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Farm Modal -->
+<div class="modal-overlay" id="farm-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="farm-modal-title">Add Farm</h3>
+      <button class="modal-close" onclick="closeModal('farm-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="farm-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Farm Name *</label>
+          <input type="text" id="farm-name" placeholder="Green Valley Farm" required />
+        </div>
+        <div class="form-group">
+          <label>Location *</label>
+          <input type="text" id="farm-location" placeholder="District, City" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Area (Acres)</label>
+          <input type="number" id="farm-area" placeholder="50" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Current Crop</label>
+          <input type="text" id="farm-crop" placeholder="Wheat, Cotton..." />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Season</label>
+          <input type="text" id="farm-season" placeholder="2026 Wheat Season" />
+        </div>
+        <div class="form-group">
+          <label>Landlord</label>
+          <select id="farm-landlord">
+            <option value="">Select landlord...</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manager</label>
+        <select id="farm-manager">
+          <option value="">Select manager...</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('farm-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFarm()">Save Farm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency } from '/js/app.js';
+  import { guardPage, logoutUser } from '/js/auth.js';
+  import { db } from '/js/firebase-config.js';
+  import {
+    collection, getDocs, doc, setDoc, updateDoc, deleteDoc,
+    query, where, serverTimestamp
+  } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
+
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+  window.toggleThemeLocal = toggleTheme;
+  window.toggleLangLocal = toggleLang;
+  initTheme(); initLang();
+
+  window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('active'); };
+  window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('active'); };
+
+  let allFarms = [];
+  let currentUser = null;
+  let userRole = null;
+
+  guardPage(['admin', 'manager', 'landlord']).then(async ({ user, userData }) => {
+    currentUser = user;
+    userRole = userData.role;
+    document.getElementById('user-name').textContent = userData.name || 'User';
+    document.getElementById('user-avatar').textContent = (userData.name || 'U')[0].toUpperCase();
+    document.getElementById('user-role-label').textContent = userData.role;
+    document.getElementById('sidebar-role').textContent = userData.role === 'admin' ? 'Admin Panel' : userData.role === 'manager' ? 'Manager Panel' : 'Landlord View';
+    document.getElementById('dash-link').href = userData.role + '.html';
+
+    if (userData.role === 'landlord') {
+      document.getElementById('add-farm-btn').style.display = 'none';
+    }
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    await loadUsers();
+    await loadFarms();
+  });
+
+  async function loadUsers() {
+    const snap = await getDocs(collection(db, 'users'));
+    const managerSel = document.getElementById('farm-manager');
+    const landlordSel = document.getElementById('farm-landlord');
+    snap.forEach(d => {
+      const u = d.data();
+      if (u.role === 'manager') {
+        managerSel.innerHTML += `<option value="${d.id}">${u.name}</option>`;
+      }
+      if (u.role === 'landlord') {
+        landlordSel.innerHTML += `<option value="${d.id}">${u.name}</option>`;
+      }
+    });
+  }
+
+  async function loadFarms() {
+    const grid = document.getElementById('farms-grid');
+    try {
+      let q;
+      if (userRole === 'landlord') {
+        q = query(collection(db, 'farms'), where('landlordId', '==', currentUser.uid));
+      } else if (userRole === 'manager') {
+        q = query(collection(db, 'farms'), where('managerId', '==', currentUser.uid));
+      } else {
+        q = collection(db, 'farms');
+      }
+      const snap = await getDocs(q);
+      allFarms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFarms(allFarms);
+    } catch (err) {
+      grid.innerHTML = '<div class="empty-state"><p>Error loading farms</p></div>';
+    }
+  }
+
+  function renderFarms(farms) {
+    const grid = document.getElementById('farms-grid');
+    if (!farms.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🌾</div><h3>No farms found</h3><p>Add your first farm to get started</p></div>';
+      return;
+    }
+    grid.innerHTML = farms.map(f => `
+      <div class="card" style="cursor:pointer;" onclick="viewFarm('${f.id}')">
+        <div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;">${f.farmName}</h3>
+              <p style="color:var(--text-muted);font-size:0.8rem;">📍 ${f.location || '—'}</p>
+            </div>
+            <span class="badge badge-green">${f.currentCrop || 'No crop'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <div style="background:var(--bg-input);padding:8px;border-radius:8px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);">Area</div>
+              <div style="font-weight:600;font-size:0.9rem;">${f.areaAcres || '—'} ac</div>
+            </div>
+            <div style="background:var(--bg-input);padding:8px;border-radius:8px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);">Season</div>
+              <div style="font-weight:600;font-size:0.9rem;">${f.season || '—'}</div>
+            </div>
+          </div>
+          ${userRole !== 'landlord' ? `
+          <div style="display:flex;gap:8px;" onclick="event.stopPropagation()">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="editFarm('${f.id}')">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteFarm('${f.id}')">🗑</button>
+          </div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.filterFarms = () => {
+    const q = document.getElementById('farm-search').value.toLowerCase();
+    renderFarms(allFarms.filter(f =>
+      (f.farmName || '').toLowerCase().includes(q) ||
+      (f.location || '').toLowerCase().includes(q) ||
+      (f.currentCrop || '').toLowerCase().includes(q)
+    ));
+  };
+
+  window.viewFarm = (id) => {
+    window.location.href = `reports.html?farmId=${id}`;
+  };
+
+  window.editFarm = (id) => {
+    const f = allFarms.find(x => x.id === id);
+    if (!f) return;
+    document.getElementById('farm-id').value = id;
+    document.getElementById('farm-name').value = f.farmName || '';
+    document.getElementById('farm-location').value = f.location || '';
+    document.getElementById('farm-area').value = f.areaAcres || '';
+    document.getElementById('farm-crop').value = f.currentCrop || '';
+    document.getElementById('farm-season').value = f.season || '';
+    document.getElementById('farm-manager').value = f.managerId || '';
+    document.getElementById('farm-landlord').value = f.landlordId || '';
+    document.getElementById('farm-modal-title').textContent = 'Edit Farm';
+    openModal('farm-modal');
+  };
+
+  window.saveFarm = async () => {
+    const id = document.getElementById('farm-id').value;
+    const farmName = document.getElementById('farm-name').value.trim();
+    const location = document.getElementById('farm-location').value.trim();
+    if (!farmName || !location) { showToast('Farm name and location required', 'error'); return; }
+
+    const data = {
+      farmName,
+      location,
+      areaAcres: Number(document.getElementById('farm-area').value) || 0,
+      currentCrop: document.getElementById('farm-crop').value.trim(),
+      season: document.getElementById('farm-season').value.trim(),
+      managerId: document.getElementById('farm-manager').value,
+      landlordId: document.getElementById('farm-landlord').value,
+      updatedAt: serverTimestamp()
+    };
+
+    try {
+      if (id) {
+        await updateDoc(doc(db, 'farms', id), data);
+        showToast('Farm updated!', 'success');
+      } else {
+        const newId = 'farm_' + Date.now();
+        await setDoc(doc(db, 'farms', newId), { ...data, farmId: newId, createdAt: serverTimestamp(), createdBy: currentUser.uid });
+        showToast('Farm created!', 'success');
+      }
+      closeModal('farm-modal');
+      document.getElementById('farm-id').value = '';
+      document.getElementById('farm-modal-title').textContent = 'Add Farm';
+      document.querySelectorAll('#farm-modal input, #farm-modal select').forEach(el => el.value = '');
+      await loadFarms();
+    } catch (err) {
+      showToast('Error saving farm: ' + err.message, 'error');
+    }
+  };
+
+  window.deleteFarm = async (id) => {
+    if (!confirm('Delete this farm? This cannot be undone.')) return;
+    try {
+      await deleteDoc(doc(db, 'farms', id));
+      showToast('Farm deleted', 'success');
+      await loadFarms();
+    } catch (err) {
+      showToast('Error deleting farm', 'error');
+    }
+  };
+
+  window.handleLogout = async () => { await logoutUser(); window.location.href = '/index.html'; };
+</script>
+</body>
+</html>
