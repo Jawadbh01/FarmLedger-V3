@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarmLedger V3 — Landlord</title>
+  <meta name="theme-color" content="#16a34a" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <p class="loading-text">Loading...</p>
+</div>
+
+<div class="app-layout" id="app" style="display:none;">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="/icons/icon-192.png" alt="FarmLedger" />
+      <div>
+        <div class="brand-name">FarmLedger</div>
+        <div class="brand-sub">Landlord View</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">My Portfolio</div>
+        <a href="landlord.html" class="nav-item active">
+          <span class="nav-icon">📊</span><span>Overview</span>
+        </a>
+        <a href="farms.html" class="nav-item">
+          <span class="nav-icon">🌾</span><span>My Farms</span>
+        </a>
+        <a href="reports.html" class="nav-item">
+          <span class="nav-icon">📈</span><span>Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">L</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Landlord</div>
+          <div class="user-role">Farm Owner</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-header">
+      <button class="icon-btn mobile-menu-btn" onclick="openSidebar()">☰</button>
+      <h1 class="header-title">My Farms Overview</h1>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="toggleThemeLocal()">🌙</button>
+        <button class="icon-btn" onclick="toggleLangLocal()">🌐</button>
+        <button class="icon-btn" onclick="handleLogout()" style="color:var(--danger);">⏻</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div>
+          <h1>Welcome back 🌾</h1>
+          <p>Here's your farm portfolio summary</p>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon green">🌾</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-farms">—</div>
+            <div class="stat-label">My Farms</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber">💰</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-income">—</div>
+            <div class="stat-label">Total Income</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">📉</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-expenses">—</div>
+            <div class="stat-label">Total Expenses</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📊</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-profit">—</div>
+            <div class="stat-label">Net Profit</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">My Farms</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Farm Name</th><th>Location</th><th>Crop</th><th>Season</th><th>Area</th></tr></thead>
+            <tbody id="farms-table">
+              <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { initTheme, toggleTheme, initLang, toggleLang, formatCurrency } from '/js/app.js';
+  import { guardPage, logoutUser } from '/js/auth.js';
+  import { db } from '/js/firebase-config.js';
+  import { collection, getDocs, query, where } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
+
+  window.toggleThemeLocal = toggleTheme;
+  window.toggleLangLocal = toggleLang;
+  initTheme(); initLang();
+
+  window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('active'); };
+  window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('active'); };
+
+  guardPage(['landlord', 'admin']).then(async ({ user, userData }) => {
+    document.getElementById('user-name').textContent = userData.name || 'Landlord';
+    document.getElementById('user-avatar').textContent = (userData.name || 'L')[0].toUpperCase();
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+
+    const farmsSnap = await getDocs(query(collection(db, 'farms'), where('landlordId', '==', user.uid)));
+    document.getElementById('stat-farms').textContent = farmsSnap.size;
+
+    const farmIds = farmsSnap.docs.map(d => d.id);
+    const tbody = document.getElementById('farms-table');
+
+    if (farmsSnap.size === 0) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🌾</div><h3>No farms assigned</h3></div></td></tr>';
+    } else {
+      tbody.innerHTML = farmsSnap.docs.map(d => {
+        const f = d.data();
+        return `<tr>
+          <td><div class="td-name">${f.farmName}</div></td>
+          <td>${f.location || '—'}</td>
+          <td>${f.currentCrop || '—'}</td>
+          <td>${f.season || '—'}</td>
+          <td>${f.areaAcres ? f.areaAcres + ' ac' : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Load bookkeeping for their farms
+    let income = 0, expenses = 0;
+    if (farmIds.length > 0) {
+      const bookSnap = await getDocs(collection(db, 'bookkeeping'));
+      bookSnap.forEach(d => {
+        const item = d.data();
+        if (farmIds.includes(item.farmId)) {
+          if (item.category === 'Harvest Income') income += item.totalAmount || 0;
+          else expenses += item.totalAmount || 0;
+        }
+      });
+    }
+
+    document.getElementById('stat-income').textContent = formatCurrency(income);
+    document.getElementById('stat-expenses').textContent = formatCurrency(expenses);
+    document.getElementById('stat-profit').textContent = formatCurrency(income - expenses);
+  });
+
+  window.handleLogout = async () => { await logoutUser(); window.location.href = '/index.html'; };
+</script>
+</body>
+</html>
