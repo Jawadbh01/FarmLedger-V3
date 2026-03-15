@@ -1,56 +1,89 @@
-const CACHE_NAME = 'farmledger-static-v1';
+const CACHE_NAME = "farmledger-static-v3";
 
 const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './css/style.css',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  "./css/style.css",
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
-self.addEventListener('install', event => {
+
+/* ---------------- INSTALL ---------------- */
+
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .catch((err) => {
+        console.error("SW install cache failed:", err);
+      })
   );
+
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
+
+/* ---------------- ACTIVATE ---------------- */
+
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys => {
+    caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
       );
     })
   );
+
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
 
-  // Only cache CSS / icons / manifest
+/* ---------------- FETCH ---------------- */
+
+self.addEventListener("fetch", (event) => {
+
+  if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+
+  /* NEVER cache HTML pages */
+  if (event.request.headers.get("accept")?.includes("text/html")) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  /* Cache-first for static files */
   if (
-    event.request.url.includes('.css') ||
-    event.request.url.includes('/icons/') ||
-    event.request.url.includes('manifest')
+    url.pathname.includes(".css") ||
+    url.pathname.includes(".js") ||
+    url.pathname.includes("/icons/") ||
+    url.pathname.includes("manifest")
   ) {
+
     event.respondWith(
-      caches.match(event.request).then(cached => {
-        return (
-          cached ||
-          fetch(event.request).then(response => {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-            return response;
-          })
-        );
+      caches.match(event.request).then((cached) => {
+
+        if (cached) return cached;
+
+        return fetch(event.request).then((response) => {
+
+          const clone = response.clone();
+
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+          });
+
+          return response;
+
+        });
+
       })
     );
+
   }
+
 });
