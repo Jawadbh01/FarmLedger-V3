@@ -1,6 +1,6 @@
-const CACHE_NAME = 'farmledger-v3-cache-v3';
+const CACHE_NAME = 'farmledger-v3-cache-v4';
+
 const ASSETS = [
-  '/',
   '/index.html',
   '/admin.html',
   '/manager.html',
@@ -27,7 +27,11 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME)
+          .map(k => caches.delete(k))
+      )
     )
   );
   self.clients.claim();
@@ -35,6 +39,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+
   e.respondWith(
     fetch(e.request)
       .then(res => {
@@ -42,6 +47,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request) || caches.match('/index.html'))
   );
 });
