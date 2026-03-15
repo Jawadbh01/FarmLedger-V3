@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarmLedger V3 — Reports</title>
+  <meta name="theme-color" content="#16a34a" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js)"></script>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <p class="loading-text">Loading Reports...</p>
+</div>
+
+<div class="app-layout" id="app" style="display:none;">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="/icons/icon-192.png" alt="FarmLedger" />
+      <div><div class="brand-name">FarmLedger</div><div class="brand-sub" id="sidebar-role">Panel</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <a href="#" class="nav-item" id="dash-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+        <a href="farms.html" class="nav-item"><span class="nav-icon">🌾</span><span>Farms</span></a>
+        <a href="farmers.html" class="nav-item"><span class="nav-icon">👨‍🌾</span><span>Farmers</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Finance</div>
+        <a href="bookkeeping.html" class="nav-item"><span class="nav-icon">📒</span><span>Bookkeeping</span></a>
+        <a href="inventory.html" class="nav-item"><span class="nav-icon">📦</span><span>Inventory</span></a>
+        <a href="reports.html" class="nav-item active"><span class="nav-icon">📈</span><span>Reports</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">User</div>
+          <div class="user-role" id="user-role-label">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-header">
+      <button class="icon-btn mobile-menu-btn" onclick="openSidebar()">☰</button>
+      <h1 class="header-title">Reports</h1>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print</button>
+        <button class="icon-btn" onclick="toggleThemeLocal()">🌙</button>
+        <button class="icon-btn" onclick="handleLogout()" style="color:var(--danger);">⏻</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div><h1>Seasonal Reports</h1><p>Farm performance and financials</p></div>
+      </div>
+
+      <!-- Filter -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body" style="padding:16px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="form-group" style="margin:0;flex:1;min-width:180px;">
+              <label style="font-size:0.75rem;">Select Farm</label>
+              <select id="report-farm" onchange="generateReport()">
+                <option value="">All Farms</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;flex:1;min-width:140px;">
+              <label style="font-size:0.75rem;">Season / Year</label>
+              <input type="text" id="report-season" placeholder="e.g. 2026" oninput="generateReport()" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="stats-grid" id="report-stats" style="margin-bottom:20px;">
+        <div class="stat-card"><div class="stat-icon green">💰</div><div class="stat-info"><div class="stat-value" id="r-income">—</div><div class="stat-label">Total Income</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">📉</div><div class="stat-info"><div class="stat-value" id="r-expense">—</div><div class="stat-label">Total Expenses</div></div></div>
+        <div class="stat-card"><div class="stat-icon amber">📊</div><div class="stat-info"><div class="stat-value" id="r-profit">—</div><div class="stat-label">Net Profit</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue">📝</div><div class="stat-info"><div class="stat-value" id="r-count">—</div><div class="stat-label">Total Entries</div></div></div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Expense Categories</span></div>
+          <div class="card-body"><div class="chart-container"><canvas id="report-pie"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Monthly Trend</span></div>
+          <div class="card-body"><div class="chart-container"><canvas id="report-line"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- Detail Table -->
+      <div class="card" id="print-report">
+        <div class="card-header">
+          <span class="card-title">Detailed Breakdown</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Category</th><th>Total Amount</th><th>Entries</th><th>% of Total</th></tr></thead>
+            <tbody id="report-breakdown"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { initTheme, toggleTheme, showToast, formatCurrency } from '/js/app.js';
+  import { guardPage, logoutUser } from '/js/auth.js';
+  import { db } from '/js/firebase-config.js';
+  import { collection, getDocs, query, orderBy } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
+
+  window.toggleThemeLocal = toggleTheme;
+  initTheme();
+
+  window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('active'); };
+  window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('active'); };
+
+  let allEntries = [];
+  let pieChart = null;
+  let lineChart = null;
+
+  guardPage(['admin', 'manager', 'landlord']).then(async ({ user, userData }) => {
+    document.getElementById('user-name').textContent = userData.name || 'User';
+    document.getElementById('user-avatar').textContent = (userData.name || 'U')[0].toUpperCase();
+    document.getElementById('user-role-label').textContent = userData.role;
+    document.getElementById('sidebar-role').textContent = userData.role === 'admin' ? 'Admin Panel' : userData.role === 'manager' ? 'Manager Panel' : 'Landlord View';
+    document.getElementById('dash-link').href = userData.role + '.html';
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+
+    const farmsSnap = await getDocs(collection(db, 'farms'));
+    farmsSnap.forEach(d => {
+      const f = d.data();
+      document.getElementById('report-farm').innerHTML += `<option value="${d.id}">${f.farmName}</option>`;
+    });
+
+    const bookSnap = await getDocs(query(collection(db, 'bookkeeping'), orderBy('date', 'asc')));
+    allEntries = bookSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Check URL param
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('farmId')) {
+      document.getElementById('report-farm').value = params.get('farmId');
+    }
+
+    generateReport();
+  });
+
+  window.generateReport = () => {
+    const farmFilter = document.getElementById('report-farm').value;
+    const seasonFilter = document.getElementById('report-season').value.trim().toLowerCase();
+
+    let entries = allEntries;
+    if (farmFilter) entries = entries.filter(e => e.farmId === farmFilter);
+    if (seasonFilter) entries = entries.filter(e => (e.season || '').toLowerCase().includes(seasonFilter));
+
+    let income = 0, expense = 0;
+    const catTotals = {};
+    const catCounts = {};
+    const monthTotals = {};
+
+    entries.forEach(e => {
+      const amt = e.totalAmount || 0;
+      if (e.category === 'Harvest Income') income += amt;
+      else expense += amt;
+
+      catTotals[e.category] = (catTotals[e.category] || 0) + amt;
+      catCounts[e.category] = (catCounts[e.category] || 0) + 1;
+
+      const d = e.date && e.date.toDate ? e.date.toDate() : new Date(e.date);
+      const monthKey = d.toLocaleDateString('en-PK', { month: 'short', year: 'numeric' });
+      if (!monthTotals[monthKey]) monthTotals[monthKey] = { income: 0, expense: 0 };
+      if (e.category === 'Harvest Income') monthTotals[monthKey].income += amt;
+      else monthTotals[monthKey].expense += amt;
+    });
+
+    document.getElementById('r-income').textContent = formatCurrency(income);
+    document.getElementById('r-expense').textContent = formatCurrency(expense);
+    document.getElementById('r-profit').textContent = formatCurrency(income - expense);
+    document.getElementById('r-count').textContent = entries.length;
+
+    const total = income + expense;
+    const cats = Object.keys(catTotals);
+    const vals = Object.values(catTotals);
+    const colors = ['#16a34a','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#f97316'];
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById('report-pie'), {
+      type: 'doughnut',
+      data: {
+        labels: cats.length ? cats : ['No Data'],
+        datasets: [{ data: vals.length ? vals : [1], backgroundColor: colors, borderWidth: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 11 }, padding: 10 } } }
+      }
+    });
+
+    const months = Object.keys(monthTotals);
+    if (lineChart) lineChart.destroy();
+    lineChart = new Chart(document.getElementById('report-line'), {
+      type: 'line',
+      data: {
+        labels: months.length ? months : ['No Data'],
+        datasets: [
+          { label: 'Income', data: months.map(m => monthTotals[m].income), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.1)', tension: 0.4, fill: true },
+          { label: 'Expenses', data: months.map(m => monthTotals[m].expense), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.4, fill: true }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: textColor } } },
+        scales: {
+          y: { ticks: { color: textColor }, grid: { color: isDark ? '#1e293b' : '#f1f5f9' } },
+          x: { ticks: { color: textColor }, grid: { display: false } }
+        }
+      }
+    });
+
+    const tbody = document.getElementById('report-breakdown');
+    tbody.innerHTML = cats.length ? cats.map((cat, i) => `
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:50%;background:${colors[i % colors.length]};display:inline-block;"></span>${cat}</div></td>
+        <td style="font-weight:600;">${formatCurrency(catTotals[cat])}</td>
+        <td>${catCounts[cat]}</td>
+        <td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:var(--border);border-radius:4px;height:6px;"><div style="width:${((catTotals[cat]/total)*100).toFixed(0)}%;background:${colors[i % colors.length]};border-radius:4px;height:100%;"></div></div>${((catTotals[cat]/total)*100).toFixed(1)}%</div></td>
+      </tr>
+    `).join('') : '<tr><td colspan="4"><div class="empty-state"><p>No data available</p></div></td></tr>';
+  };
+
+  window.handleLogout = async () => { await logoutUser(); window.location.href = '/index.html'; };
+</script>
+</body>
+</html>
