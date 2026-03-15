@@ -17,8 +17,8 @@ const ROLE_ROUTES = {
   landlord: "./landlord.html"
 };
 
-// LOGIN USER
 export async function loginUser(email, password) {
+
   const userCred = await signInWithEmailAndPassword(auth, email, password);
 
   const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
@@ -33,21 +33,19 @@ export async function loginUser(email, password) {
     throw new Error("Your account has been suspended.");
   }
 
-  // redirect after login
   window.location.href = ROLE_ROUTES[data.role] || "./index.html";
 
   return data;
 }
 
 
-// LOGOUT
 export function logoutUser() {
   return signOut(auth);
 }
 
 
-// PAGE GUARD
 export function guardPage(allowedRoles) {
+
   return new Promise((resolve, reject) => {
 
     const timeout = setTimeout(() => {
@@ -55,7 +53,7 @@ export function guardPage(allowedRoles) {
       window.location.href = "./index.html";
     }, 10000);
 
-    onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
 
       clearTimeout(timeout);
 
@@ -86,58 +84,14 @@ export function guardPage(allowedRoles) {
           return;
         }
 
+        unsubscribe();
+
         resolve({ user, userData: data });
 
       } catch (err) {
 
         console.error(err);
         window.location.href = "./index.html";
-
-      }
-
-    });
-
-  });
-}
-
-
-// REDIRECT IF ALREADY LOGGED IN
-export function redirectIfLoggedIn() {
-
-  return new Promise((resolve) => {
-
-    const timeout = setTimeout(() => resolve(null), 8000);
-
-    onAuthStateChanged(auth, async (user) => {
-
-      clearTimeout(timeout);
-
-      if (!user) {
-        resolve(null);
-        return;
-      }
-
-      try {
-
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-
-        if (userDoc.exists()) {
-
-          const data = userDoc.data();
-
-          if (data.status !== "suspended") {
-            window.location.href = ROLE_ROUTES[data.role] || "./index.html";
-            return;
-          }
-
-        }
-
-        resolve(null);
-
-      } catch (error) {
-
-        console.error(error);
-        resolve(null);
 
       }
 
