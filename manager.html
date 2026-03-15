@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarmLedger V3 — Manager</title>
+  <meta name="theme-color" content="#16a34a" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js)"></script>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <p class="loading-text">Loading...</p>
+</div>
+
+<div class="app-layout" id="app" style="display:none;">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="/icons/icon-192.png" alt="FarmLedger" />
+      <div>
+        <div class="brand-name">FarmLedger</div>
+        <div class="brand-sub">Manager Panel</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <a href="manager.html" class="nav-item active">
+          <span class="nav-icon">📊</span><span data-i18n="dashboard">Dashboard</span>
+        </a>
+        <a href="farms.html" class="nav-item">
+          <span class="nav-icon">🌾</span><span data-i18n="farms">Farms</span>
+        </a>
+        <a href="farmers.html" class="nav-item">
+          <span class="nav-icon">👨‍🌾</span><span data-i18n="farmers">Farmers</span>
+        </a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Finance</div>
+        <a href="bookkeeping.html" class="nav-item">
+          <span class="nav-icon">📒</span><span data-i18n="bookkeeping">Bookkeeping</span>
+        </a>
+        <a href="inventory.html" class="nav-item">
+          <span class="nav-icon">📦</span><span data-i18n="inventory">Inventory</span>
+        </a>
+        <a href="reports.html" class="nav-item">
+          <span class="nav-icon">📈</span><span data-i18n="reports">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">M</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Manager</div>
+          <div class="user-role">Farm Manager</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-header">
+      <button class="icon-btn mobile-menu-btn" onclick="openSidebar()">☰</button>
+      <h1 class="header-title" data-i18n="dashboard">Dashboard</h1>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="toggleThemeLocal()">🌙</button>
+        <button class="icon-btn" onclick="toggleLangLocal()">🌐</button>
+        <button class="icon-btn" onclick="handleLogout()" style="color:var(--danger);">⏻</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div>
+          <h1>Manager Dashboard</h1>
+          <p>Your farms and daily operations</p>
+        </div>
+        <a href="bookkeeping.html" class="btn btn-primary">+ Add Entry</a>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon green">🌾</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-farms">—</div>
+            <div class="stat-label">My Farms</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">📒</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-entries">—</div>
+            <div class="stat-label">Total Entries</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber">💰</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-income">—</div>
+            <div class="stat-label">Total Income</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">📉</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-expenses">—</div>
+            <div class="stat-label">Total Expenses</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Entries</span>
+          <a href="bookkeeping.html" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr></thead>
+            <tbody id="recent-entries">
+              <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { initTheme, toggleTheme, initLang, toggleLang, formatCurrency, formatDate } from '/js/app.js';
+  import { guardPage, logoutUser } from '/js/auth.js';
+  import { db } from '/js/firebase-config.js';
+  import { collection, getDocs, query, orderBy, limit, where } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
+
+  window.toggleThemeLocal = toggleTheme;
+  window.toggleLangLocal = toggleLang;
+  initTheme(); initLang();
+
+  window.openSidebar = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('active'); };
+  window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('active'); };
+
+  guardPage(['manager', 'admin']).then(async ({ user, userData }) => {
+    document.getElementById('user-name').textContent = userData.name || 'Manager';
+    document.getElementById('user-avatar').textContent = (userData.name || 'M')[0].toUpperCase();
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+
+    const [farmsSnap, bookSnap] = await Promise.all([
+      getDocs(query(collection(db, 'farms'), where('managerId', '==', user.uid))),
+      getDocs(query(collection(db, 'bookkeeping'), orderBy('date', 'desc'), limit(10)))
+    ]);
+
+    document.getElementById('stat-farms').textContent = farmsSnap.size;
+
+    let income = 0, expenses = 0, entries = [];
+    bookSnap.forEach(d => {
+      const item = d.data();
+      entries.push(item);
+      if (item.category === 'Harvest Income') income += item.totalAmount || 0;
+      else expenses += item.totalAmount || 0;
+    });
+
+    document.getElementById('stat-entries').textContent = bookSnap.size;
+    document.getElementById('stat-income').textContent = formatCurrency(income);
+    document.getElementById('stat-expenses').textContent = formatCurrency(expenses);
+
+    const tbody = document.getElementById('recent-entries');
+    tbody.innerHTML = entries.length ? entries.map(item => `
+      <tr>
+        <td>${formatDate(item.date)}</td>
+        <td>${item.description || '—'}</td>
+        <td><span class="badge badge-blue">${item.category || '—'}</span></td>
+        <td style="font-weight:600;">${formatCurrency(item.totalAmount)}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="4"><div class="empty-state"><p>No entries yet</p></div></td></tr>';
+  });
+
+  window.handleLogout = async () => { await logoutUser(); window.location.href = '/index.html'; };
+</script>
+</body>
+</html>
