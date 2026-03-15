@@ -1,6 +1,6 @@
-import { initializeApp } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js)";
-import { getAuth } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js)";
-import { getFirestore, enableIndexedDbPersistence } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpTPibk-7_kqyJdfN94KrLlcKkoNnqIYE",
@@ -13,12 +13,17 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// enable offline support
 enableIndexedDbPersistence(db).catch(err => {
-  if (err.code === 'failed-precondition') console.warn('Offline persistence: multiple tabs open');
-  else if (err.code === 'unimplemented') console.warn('Offline persistence not supported');
+  if (err.code === "failed-precondition") {
+    console.warn("Offline persistence failed: multiple tabs open");
+  } else if (err.code === "unimplemented") {
+    console.warn("Offline persistence not supported in this browser");
+  }
 });
 
 export { auth, db };
