@@ -51,7 +51,7 @@ export function guardPage(allowedRoles) {
     const timeout = setTimeout(() => {
       reject(new Error("Auth timeout"));
       window.location.href = "./index.html";
-    }, 10000);
+    }, 20000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
 
