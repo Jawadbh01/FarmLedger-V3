@@ -1,52 +1,56 @@
-const CACHE_NAME = 'farmledger-v3-cache-v4';
+const CACHE_NAME = 'farmledger-static-v1';
 
-const ASSETS = [
-  '/index.html',
-  '/admin.html',
-  '/manager.html',
-  '/landlord.html',
-  '/farms.html',
-  '/bookkeeping.html',
-  '/inventory.html',
-  '/farmers.html',
-  '/reports.html',
-  '/css/style.css',
-  '/js/firebase-config.js',
-  '/js/auth.js',
-  '/js/app.js',
-  '/manifest.json'
+const STATIC_ASSETS = [
+  './',
+  './index.html',
+  './css/style.css',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(STATIC_ASSETS);
+    })
   );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
         keys
-          .filter(k => k !== CACHE_NAME)
-          .map(k => caches.delete(k))
-      )
-    )
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      );
+    })
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
 
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        return res;
+  // Only cache CSS / icons / manifest
+  if (
+    event.request.url.includes('.css') ||
+    event.request.url.includes('/icons/') ||
+    event.request.url.includes('manifest')
+  ) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        return (
+          cached ||
+          fetch(event.request).then(response => {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            return response;
+          })
+        );
       })
-      .catch(() => caches.match(e.request) || caches.match('/index.html'))
-  );
+    );
+  }
 });
