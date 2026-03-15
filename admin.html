@@ -1,555 +1,276 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FarmLedger V3 — Admin</title>
-
-  <meta name="theme-color" content="#16a34a" />
-
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json" />
-
-  <!-- Icons -->
-  <link rel="icon" href="./icons/icon-192.png" />
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="./css/style.css" />
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
-
-<div class="loading-screen" id="loading-screen">
-  <div class="spinner"></div>
-  <p class="loading-text">Loading Dashboard...</p>
-</div>
-
-<div class="app-layout" id="app" style="display:none;">
-
-  <!-- Sidebar Overlay -->
-  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <img src="./icons/icon-192.png" alt="FarmLedger" />
-      <div>
-        <div class="brand-name">FarmLedger</div>
-        <div class="brand-sub">Admin Panel</div>
-      </div>
-    </div>
-
-    <nav class="sidebar-nav">
-      <div class="nav-section">
-        <div class="nav-label">Main</div>
-        <a href="admin.html" class="nav-item active">
-          <span class="nav-icon">📊</span>
-          <span data-i18n="dashboard">Dashboard</span>
-        </a>
-        <a href="farms.html" class="nav-item">
-          <span class="nav-icon">🌾</span>
-          <span data-i18n="farms">Farms</span>
-        </a>
-        <a href="farmers.html" class="nav-item">
-          <span class="nav-icon">👨‍🌾</span>
-          <span data-i18n="farmers">Farmers</span>
-        </a>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Finance</div>
-        <a href="bookkeeping.html" class="nav-item">
-          <span class="nav-icon">📒</span>
-          <span data-i18n="bookkeeping">Bookkeeping</span>
-        </a>
-        <a href="inventory.html" class="nav-item">
-          <span class="nav-icon">📦</span>
-          <span data-i18n="inventory">Inventory</span>
-        </a>
-        <a href="reports.html" class="nav-item">
-          <span class="nav-icon">📈</span>
-          <span data-i18n="reports">Reports</span>
-        </a>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label">Admin</div>
-        <a href="#" class="nav-item" onclick="openSection('users')">
-          <span class="nav-icon">👥</span>
-          <span data-i18n="users">Users</span>
-        </a>
-      </div>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="user-card">
-        <div class="user-avatar" id="user-avatar">A</div>
-        <div class="user-info">
-          <div class="user-name" id="user-name">Admin</div>
-          <div class="user-role">Administrator</div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="main-content">
-    <header class="top-header">
-      <button class="icon-btn mobile-menu-btn" onclick="openSidebar()">☰</button>
-      <h1 class="header-title" data-i18n="dashboard">Dashboard</h1>
-      <div class="header-actions">
-        <button class="icon-btn notification-dot" id="notif-btn" title="Notifications">🔔</button>
-        <button class="icon-btn" onclick="toggleThemeLocal()" title="Toggle Theme">🌙</button>
-        <button class="icon-btn" onclick="toggleLangLocal()" title="Toggle Language">🌐</button>
-        <button class="icon-btn" onclick="handleLogout()" title="Logout" style="color:var(--danger);">⏻</button>
-      </div>
-    </header>
-
-    <!-- Dashboard Section -->
-    <div class="page-content" id="section-dashboard">
-      <div class="page-header">
-        <div>
-          <h1>Good morning 👋</h1>
-          <p id="dashboard-sub">Here's what's happening on your farms today</p>
-        </div>
-        <button class="btn btn-primary" onclick="openModal('add-user-modal')">+ Add User</button>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon green">🌾</div>
-          <div class="stat-info">
-            <div class="stat-value" id="stat-farms">—</div>
-            <div class="stat-label" data-i18n="totalFarms">Total Farms</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon blue">👨‍🌾</div>
-          <div class="stat-info">
-            <div class="stat-value" id="stat-farmers">—</div>
-            <div class="stat-label" data-i18n="totalFarmers">Total Farmers</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon amber">💰</div>
-          <div class="stat-info">
-            <div class="stat-value" id="stat-profit">—</div>
-            <div class="stat-label" data-i18n="seasonProfit">Season Profit</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon purple">📦</div>
-          <div class="stat-info">
-            <div class="stat-value" id="stat-inventory">—</div>
-            <div class="stat-label" data-i18n="inventoryValue">Inventory Value</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Charts -->
-      <div class="chart-grid">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Expense Breakdown</span>
-          </div>
-          <div class="card-body">
-            <div class="chart-container">
-              <canvas id="expense-chart"></canvas>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Income vs Expenses</span>
-          </div>
-          <div class="card-body">
-            <div class="chart-container">
-              <canvas id="income-chart"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Activity -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Recent Bookkeeping Entries</span>
-          <a href="bookkeeping.html" class="btn btn-secondary btn-sm">View All</a>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Farm</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody id="recent-entries">
-              <tr><td colspan="5"><div class="empty-state"><p>Loading...</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Users Section -->
-    <div class="page-content" id="section-users" style="display:none;">
-      <div class="page-header">
-        <div><h1 data-i18n="users">Users</h1><p>Manage all system users</p></div>
-        <button class="btn btn-primary" onclick="openModal('add-user-modal')">+ Add User</button>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="search-bar" style="margin:0;flex:1;">
-            <div class="search-input-wrap">
-              <span class="search-icon">🔍</span>
-              <input type="text" placeholder="Search users..." id="user-search" oninput="filterUsers()" />
-            </div>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="users-table">
-              <tr><td colspan="5"><div class="empty-state"><p>Loading users...</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- Add User Modal -->
-<div class="modal-overlay" id="add-user-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Add New User</h3>
-      <button class="modal-close" onclick="closeModal('add-user-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <form id="add-user-form" novalidate>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" id="new-name" placeholder="John Doe" required />
-          </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input type="tel" id="new-phone" placeholder="03001234567" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="new-email" placeholder="user@example.com" required />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="new-password" placeholder="Min 6 characters" required />
-        </div>
-        <div class="form-group">
-          <label>Role</label>
-          <select id="new-role" required>
-            <option value="">Select role...</option>
-            <option value="manager">Manager</option>
-            <option value="landlord">Landlord</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('add-user-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitAddUser()">Create User</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast-container"></div>
-
 <script type="module">
-  import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency, formatDate } from './js/app.js';
-  import { guardPage, logoutUser } from './js/auth.js';
-  import { db } from './js/firebase-config.js';
-  import {
-    collection, getDocs, doc, setDoc, updateDoc,
-    query, orderBy, limit, serverTimestamp, getDoc
-  } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
-  import {
-    getAuth, createUserWithEmailAndPassword
-  } from from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { initializeApp } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js)";
 
-  window.openModal = openModal;
-  window.closeModal = closeModal;
-  window.toggleThemeLocal = toggleTheme;
-  window.toggleLangLocal = toggleLang;
+import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency, formatDate } from './js/app.js';
+import { guardPage, logoutUser } from './js/auth.js';
+import { db } from './js/firebase-config.js';
 
-  initTheme();
-  initLang();
+import {
+  collection, getDocs, doc, setDoc, updateDoc,
+  query, orderBy, limit, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  let currentUser = null;
-  let allUsers = [];
-  let expenseChart = null;
-  let incomeChart = null;
+import {
+  getAuth,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  // Second Firebase app for creating users without signing out admin
-  const secondaryApp = initializeApp({
-    apiKey: "AIzaSyDpTPibk-7_kqyJdfN94KrLlcKkoNnqIYE",
-    authDomain: "farmledger-e85e3.firebaseapp.com",
-    projectId: "farmledger-e85e3",
-    storageBucket: "farmledger-e85e3.firebasestorage.app",
-    messagingSenderId: "922324809308",
-    appId: "1:922324809308:web:05c015ce12e55034e99899"
-  }, 'secondary');
-  const secondaryAuth = getAuth(secondaryApp);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
-  guardPage(['admin']).then(({ userData }) => {
-    currentUser = userData;
-    document.getElementById('user-name').textContent = userData.name || 'Admin';
-    document.getElementById('user-avatar').textContent = (userData.name || 'A')[0].toUpperCase();
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    loadDashboard();
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.toggleThemeLocal = toggleTheme;
+window.toggleLangLocal = toggleLang;
+
+initTheme();
+initLang();
+
+let currentUser = null;
+let allUsers = [];
+
+
+/* ---------------- AUTH GUARD ---------------- */
+
+guardPage(['admin']).then(({ userData }) => {
+
+  currentUser = userData;
+
+  document.getElementById('user-name').textContent = userData.name || 'Admin';
+  document.getElementById('user-avatar').textContent =
+    (userData.name || 'A')[0].toUpperCase();
+
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  loadUsers();
+  loadDashboard();
+
+}).catch(() => {});
+
+
+/* ---------------- LOGOUT ---------------- */
+
+window.handleLogout = async () => {
+  await logoutUser();
+  window.location.href = './index.html';
+};
+
+
+/* ---------------- SIDEBAR ---------------- */
+
+window.openSidebar = () => {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('active');
+};
+
+window.closeSidebar = () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+};
+
+
+/* ---------------- SECTION SWITCH ---------------- */
+
+window.openSection = (section) => {
+
+  document.querySelectorAll('[id^="section-"]').forEach(s=>{
+    s.style.display='none';
+  });
+
+  document.getElementById('section-'+section).style.display='block';
+
+};
+
+
+/* ---------------- DASHBOARD ---------------- */
+
+async function loadDashboard(){
+
+  try{
+
+    const farmsSnap = await getDocs(collection(db,'farms'));
+    const farmersSnap = await getDocs(collection(db,'farmers'));
+    const inventorySnap = await getDocs(collection(db,'inventory'));
+
+    document.getElementById('stat-farms').textContent = farmsSnap.size;
+    document.getElementById('stat-farmers').textContent = farmersSnap.size;
+
+    let inventoryValue = 0;
+
+    inventorySnap.forEach(d=>{
+      const item = d.data();
+      inventoryValue += (item.price||0)*(item.quantity||0);
+    });
+
+    document.getElementById('stat-inventory').textContent =
+      formatCurrency(inventoryValue);
+
+  }catch(e){
+
+    console.error(e);
+
+  }
+
+}
+
+
+/* ---------------- USERS ---------------- */
+
+async function loadUsers(){
+
+  try{
+
+    const snap = await getDocs(collection(db,'users'));
+
+    allUsers = snap.docs.map(d=>({
+      id:d.id,
+      ...d.data()
+    }));
+
+    renderUsers(allUsers);
+
+  }catch(e){
+
+    console.error(e);
+
+  }
+
+}
+
+
+function renderUsers(users){
+
+  const tbody = document.getElementById('users-table');
+
+  if(!users.length){
+
+    tbody.innerHTML =
+      '<tr><td colspan="5">No Users Found</td></tr>';
+
+    return;
+
+  }
+
+  tbody.innerHTML = users.map(u=>`
+
+<tr>
+
+<td>${u.name||'-'}</td>
+
+<td>${u.email||'-'}</td>
+
+<td>${u.role||'-'}</td>
+
+<td>${u.status||'-'}</td>
+
+<td>
+
+<button onclick="toggleUserStatus('${u.id}','${u.status}')">
+
+${u.status==='active'?'Suspend':'Activate'}
+
+</button>
+
+</td>
+
+</tr>
+
+`).join('');
+
+}
+
+
+/* ---------------- USER STATUS ---------------- */
+
+window.toggleUserStatus = async(uid,current)=>{
+
+  const newStatus = current==='active'?'suspended':'active';
+
+  await updateDoc(doc(db,'users',uid),{
+
+    status:newStatus
+
+  });
+
+  loadUsers();
+
+};
+
+
+/* ---------------- FIREBASE SECONDARY APP ---------------- */
+
+const secondaryApp = initializeApp({
+
+  apiKey: "AIzaSyDpTPibk-7_kqyJdfN94KrLlcKkoNnqIYE",
+  authDomain: "farmledger-e85e3.firebaseapp.com",
+  projectId: "farmledger-e85e3",
+  storageBucket: "farmledger-e85e3.firebasestorage.app",
+  messagingSenderId: "922324809308",
+  appId: "1:922324809308:web:05c015ce12e55034e99899"
+
+}, 'secondary');
+
+
+const secondaryAuth = getAuth(secondaryApp);
+
+
+/* ---------------- ADD USER ---------------- */
+
+window.submitAddUser = async()=>{
+
+  const name=document.getElementById('new-name').value.trim();
+  const email=document.getElementById('new-email').value.trim();
+  const password=document.getElementById('new-password').value;
+  const phone=document.getElementById('new-phone').value.trim();
+  const role=document.getElementById('new-role').value;
+
+  if(!name||!email||!password||!role){
+
+    showToast('Fill all fields','error');
+    return;
+
+  }
+
+  try{
+
+    const cred =
+      await createUserWithEmailAndPassword(
+        secondaryAuth,email,password
+      );
+
+    const uid = cred.user.uid;
+
+    await setDoc(doc(db,'users',uid),{
+
+      uid,
+      name,
+      email,
+      phone,
+      role,
+      status:'active',
+      createdAt:serverTimestamp(),
+      createdBy:currentUser.uid
+
+    });
+
+    await secondaryAuth.signOut();
+
+    showToast('User Created','success');
+
+    closeModal('add-user-modal');
+
+    document.getElementById('add-user-form').reset();
+
     loadUsers();
-  }).catch(() => {});
 
-  window.handleLogout = async () => {
-    await logoutUser();
-    window.location.href = './index.html';
-  };
+  }catch(err){
 
-  window.openSection = (section) => {
-    document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
-    document.getElementById('section-' + section).style.display = 'block';
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    closeSidebar();
-  };
+    console.error(err);
 
-  window.openSidebar = () => {
-    document.getElementById('sidebar').classList.add('open');
-    document.getElementById('sidebar-overlay').classList.add('active');
-  };
-  window.closeSidebar = () => {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebar-overlay').classList.remove('active');
-  };
+    showToast('Failed to create user','error');
 
-  async function loadDashboard() {
-    try {
-      const [farmsSnap, farmersSnap, inventorySnap, bookSnap] = await Promise.all([
-        getDocs(collection(db, 'farms')),
-        getDocs(collection(db, 'farmers')),
-        getDocs(collection(db, 'inventory')),
-        getDocs(query(collection(db, 'bookkeeping'), orderBy('date', 'desc'), limit(5)))
-      ]);
-
-      document.getElementById('stat-farms').textContent = farmsSnap.size;
-      document.getElementById('stat-farmers').textContent = farmersSnap.size;
-
-      let inventoryValue = 0;
-      inventorySnap.forEach(d => {
-        const item = d.data();
-        inventoryValue += (item.price || 0) * (item.quantity || 0);
-      });
-      document.getElementById('stat-inventory').textContent = formatCurrency(inventoryValue);
-
-      let income = 0, expenses = 0;
-      const catTotals = {};
-      const recentRows = [];
-      const farmNames = {};
-
-      for (const d of farmsSnap.docs) farmNames[d.id] = d.data().farmName;
-
-      bookSnap.forEach(d => {
-        const item = d.data();
-        if (item.category === 'Harvest Income') income += item.totalAmount || 0;
-        else expenses += item.totalAmount || 0;
-        catTotals[item.category] = (catTotals[item.category] || 0) + (item.totalAmount || 0);
-        recentRows.push(item);
-      });
-
-      document.getElementById('stat-profit').textContent = formatCurrency(income - expenses);
-
-      // Recent entries table
-      const tbody = document.getElementById('recent-entries');
-      if (recentRows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📒</div><p>No entries yet</p></div></td></tr>';
-      } else {
-        tbody.innerHTML = recentRows.map(item => `
-          <tr>
-            <td>${formatDate(item.date)}</td>
-            <td>${farmNames[item.farmId] || item.farmId || '—'}</td>
-            <td><span class="badge badge-blue">${item.category || '—'}</span></td>
-            <td>${item.description || '—'}</td>
-            <td style="font-weight:600;">${formatCurrency(item.totalAmount)}</td>
-          </tr>
-        `).join('');
-      }
-
-      // Charts
-      renderCharts(catTotals, income, expenses);
-    } catch (err) {
-      console.error(err);
-    }
   }
 
-  function renderCharts(catTotals, income, expenses) {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const textColor = isDark ? '#94a3b8' : '#64748b';
+};
 
-    const cats = Object.keys(catTotals);
-    const vals = Object.values(catTotals);
-    const colors = ['#16a34a','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
-
-    if (expenseChart) expenseChart.destroy();
-    expenseChart = new Chart(document.getElementById('expense-chart'), {
-      type: 'doughnut',
-      data: {
-        labels: cats.length ? cats : ['No Data'],
-        datasets: [{ data: vals.length ? vals : [1], backgroundColor: colors, borderWidth: 0 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 11 }, padding: 12 } } }
-      }
-    });
-
-    if (incomeChart) incomeChart.destroy();
-    incomeChart = new Chart(document.getElementById('income-chart'), {
-      type: 'bar',
-      data: {
-        labels: ['This Season'],
-        datasets: [
-          { label: 'Income', data: [income], backgroundColor: '#16a34a', borderRadius: 6 },
-          { label: 'Expenses', data: [expenses], backgroundColor: '#ef4444', borderRadius: 6 }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: textColor } } },
-        scales: {
-          y: { ticks: { color: textColor }, grid: { color: isDark ? '#1e293b' : '#f1f5f9' } },
-          x: { ticks: { color: textColor }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  async function loadUsers() {
-    try {
-      const snap = await getDocs(collection(db, 'users'));
-      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderUsers(allUsers);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function renderUsers(users) {
-    const tbody = document.getElementById('users-table');
-    if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👥</div><h3>No users found</h3></div></td></tr>';
-      return;
-    }
-    tbody.innerHTML = users.map(u => `
-      <tr>
-        <td><div class="td-name">${u.name || '—'}</div><div class="td-muted">${u.phone || ''}</div></td>
-        <td>${u.email || '—'}</td>
-        <td><span class="badge badge-${u.role === 'admin' ? 'red' : u.role === 'manager' ? 'blue' : 'green'}">${u.role}</span></td>
-        <td><span class="badge badge-${u.status === 'active' ? 'green' : 'red'}">${u.status}</span></td>
-        <td>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-sm btn-${u.status === 'active' ? 'warning' : 'primary'}" onclick="toggleUserStatus('${u.id}','${u.status}')">
-              ${u.status === 'active' ? '⏸ Suspend' : '▶ Activate'}
-            </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteUserRecord('${u.id}')">🗑</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  window.filterUsers = () => {
-    const q = document.getElementById('user-search').value.toLowerCase();
-    renderUsers(allUsers.filter(u =>
-      (u.name || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q) ||
-      (u.role || '').toLowerCase().includes(q)
-    ));
-  };
-
-  window.toggleUserStatus = async (uid, current) => {
-    const newStatus = current === 'active' ? 'suspended' : 'active';
-    try {
-      await updateDoc(doc(db, 'users', uid), { status: newStatus });
-      showToast(`User ${newStatus}`, 'success');
-      loadUsers();
-    } catch (err) {
-      showToast('Failed to update status', 'error');
-    }
-  };
-
-  window.deleteUserRecord = async (uid) => {
-    if (!confirm('Delete this user record? This only removes their Firestore record.')) return;
-    try {
-      await updateDoc(doc(db, 'users', uid), { status: 'suspended' });
-      showToast('User suspended/removed', 'success');
-      loadUsers();
-    } catch (err) {
-      showToast('Failed', 'error');
-    }
-  };
-
-  window.submitAddUser = async () => {
-    const name = document.getElementById('new-name').value.trim();
-    const email = document.getElementById('new-email').value.trim();
-    const password = document.getElementById('new-password').value;
-    const phone = document.getElementById('new-phone').value.trim();
-    const role = document.getElementById('new-role').value;
-
-    if (!name || !email || !password || !role) {
-      showToast('Please fill all required fields', 'error');
-      return;
-    }
-    if (password.length < 6) {
-      showToast('Password must be at least 6 characters', 'error');
-      return;
-    }
-
-    try {
-      const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-      const uid = cred.user.uid;
-      await setDoc(doc(db, 'users', uid), {
-        uid, name, email, phone, role,
-        status: 'active',
-        createdAt: serverTimestamp(),
-        createdBy: currentUser?.uid || ''
-      });
-      await secondaryAuth.signOut();
-      showToast('User created successfully!', 'success');
-      closeModal('add-user-modal');
-      document.getElementById('add-user-form').reset();
-      loadUsers();
-    } catch (err) {
-      let msg = 'Failed to create user.';
-      if (err.code === 'auth/email-already-in-use') msg = 'Email already in use.';
-      showToast(msg, 'error');
-    }
-  };
 </script>
-</body>
-</html>
