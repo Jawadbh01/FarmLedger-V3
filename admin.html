@@ -4,11 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FarmLedger V3 — Admin</title>
+
   <meta name="theme-color" content="#16a34a" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/style.css" />
-  <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js)"></script>
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json" />
+
+  <!-- Icons -->
+  <link rel="icon" href="./icons/icon-192.png" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/style.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -25,7 +34,7 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <img src="/icons/icon-192.png" alt="FarmLedger" />
+      <img src="./icons/icon-192.png" alt="FarmLedger" />
       <div>
         <div class="brand-name">FarmLedger</div>
         <div class="brand-sub">Admin Panel</div>
@@ -272,9 +281,9 @@
 <div id="toast-container"></div>
 
 <script type="module">
-  import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency, formatDate } from '/js/app.js';
-  import { guardPage, logoutUser } from '/js/auth.js';
-  import { db } from '/js/firebase-config.js';
+  import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency, formatDate } from './js/app.js';
+  import { guardPage, logoutUser } from './js/auth.js';
+  import { db } from './js/firebase-config.js';
   import {
     collection, getDocs, doc, setDoc, updateDoc,
     query, orderBy, limit, serverTimestamp, getDoc
