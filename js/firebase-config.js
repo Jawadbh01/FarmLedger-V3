@@ -18,12 +18,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // enable offline support
-enableIndexedDbPersistence(db).catch(err => {
-  if (err.code === "failed-precondition") {
-    console.warn("Offline persistence failed: multiple tabs open");
-  } else if (err.code === "unimplemented") {
-    console.warn("Offline persistence not supported in this browser");
-  }
-});
+try {
+  enableIndexedDbPersistence(db);
+} catch (e) {
+  console.warn("Offline persistence disabled");
+}
 
 export { auth, db };
