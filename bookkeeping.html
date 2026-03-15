@@ -217,14 +217,14 @@
 <div id="toast-container"></div>
 
 <script type="module">
-  import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency, formatDate } from '/js/app.js';
+  import { initTheme, toggleTheme, initLang, toggleLang, showToast, openModal, closeModal, formatCurrency, formatDate } from './js/app.js';
   import { guardPage, logoutUser } from '/js/auth.js';
-  import { db } from '/js/firebase-config.js';
-  import { auth } from '/js/firebase-config.js';
+  import { db } from './js/firebase-config.js';
+  import { auth } from './js/firebase-config.js';
   import {
     collection, getDocs, doc, setDoc, updateDoc, deleteDoc,
     query, orderBy, where, serverTimestamp
-  } from "[gstatic.com](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)";
+  } from from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
   window.openModal = openModal;
   window.closeModal = closeModal;
